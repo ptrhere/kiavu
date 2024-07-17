@@ -1,0 +1,74 @@
+---
+ - name: Playbook to install streaming
+   hosts: all
+   become: true
+   tasks: 
+    - name: Add specified repository into sources list
+      ansible.builtin.apt_repository:
+        repo: deb http://deb.debian.org/debian bookworm main contrib non-free-firmware non-free
+        state: present
+
+    - name: Ansible apt install 
+      apt:
+        pkg: 
+             - nginx 
+             - libnginx-mod-rtmp 
+             - certbot
+             - python3-certbot-nginx
+             - ffmpeg 
+             - inxi
+             - ufw
+        state: present
+        update_cache: yes
+
+    - name: Copy website files to the server's document root
+      copy:
+        src: "./html/"
+        dest: "/var/www/"
+        mode: preserve
+      notify: restart nginx
+
+
+    - name: nginx configuration
+      copy:
+        src: ./nginx.conf
+        dest: /etc/nginx/nginx.conf
+        mode: preserve
+      notify: restart nginx
+
+    - name: Allow all access to tcp port 80
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Allow all access to tcp port 443
+      ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+
+    - name: Allow all access to tcp port 1935 (rtmp)
+      ufw:
+        rule: allow
+        port: '1935'
+        proto: tcp
+
+    - name: Allow all access to udp port 1935 (rtmp)
+      ufw:
+        rule: allow
+        port: '1935'
+        proto: udp
+
+
+
+   handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+
+    - name: reboot machine
+      ansible.builtin.reboot:
+        reboot_command: /sbin/shutdown -r now
+

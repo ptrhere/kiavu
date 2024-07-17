@@ -1,0 +1,93 @@
+---
+
+ - name: Playbook to install extra packages
+   hosts: all
+   become: true
+   tasks: 
+    - name: Ansible yum install extra
+      yum:
+        pkg: 
+             - epel-release
+             - https://extras.getpagespeed.com/release-latest.rpm
+        state: present
+        update_cache: yes
+        validate_certs: no
+        disable_gpg_check: yes
+
+
+ - name: Playbook to install streaming
+   hosts: all
+   become: true
+   tasks: 
+    - name: Ansible yum install 
+      yum:
+        pkg: 
+             - nginx 
+             - nginx-module-rtmp
+             - ffmpeg-free
+             - inxi
+             - ufw
+        state: present
+        update_cache: yes
+        validate_certs: no
+        disable_gpg_check: yes
+
+    - name: Copy website files to the server's document root
+      copy:
+        src: "./html/"
+        dest: "/var/www/"
+        mode: preserve
+      notify: restart nginx
+
+
+    - name: nginx configuration
+      copy:
+        src: ./nginx.conf
+        dest: /etc/nginx/nginx.conf
+        mode: preserve
+      notify: restart nginx
+
+        
+    - name: Allow all access to tcp port 80
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Allow all access to tcp port 443
+      ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+
+    - name: Allow all access to tcp port 1935 (rtmp)
+      ufw:
+        rule: allow
+        port: '1935'
+        proto: tcp
+
+    - name: Allow all access to udp port 1935 (rtmp)
+      ufw:
+        rule: allow
+        port: '1935'
+        proto: udp
+
+
+    - name: systemd config DefaultLimitNOFILE=65535
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/system.conf
+        regexp: '^DefaultLimitNOFILE='
+        line: DefaultLimitNOFILE=65535
+      notify: reboot machine
+
+
+   handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+
+    - name: reboot machine
+      ansible.builtin.reboot:
+        reboot_command: /sbin/shutdown -r now
+

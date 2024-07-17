@@ -1,0 +1,17 @@
+https://community.hetzner.com/tutorials/howto-enable-igpu
+
+ansible-playbook -i inventory installstreamer.yml
+
+
+test on 8700 chipset
+tested on 6700 chipset
+amd ryzen5 3600 / software only...
+certbot --nginx -d live.enkidu.fr
+
+
+
+--
+
+nginx.conf
+added ipv4 config for ssl (listen 443)
+
